@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Chess GPT Advisor",
+  "version": "1.0",
+  "description": "Get real-time chess move suggestions powered by GPT",
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://chess.com/*",
+    "https://www.chess.com/*",
+    "https://your-backend-url.com/*"
+  ],
+  "action": {
+    "default_title": "Chess GPT Advisor"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.chess.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["sidebar.html"],
+      "matches": ["*://*.chess.com/*"]
+    }
+  ]
+}
