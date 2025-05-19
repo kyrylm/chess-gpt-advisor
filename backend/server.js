@@ -62,20 +62,12 @@ try {
     process.exit(1);
 }
 
-// Chess-specific prompt template
-const CHESS_SYSTEM_PROMPT = `You are an expert chess advisor. Your role is to:
+// Chess-specific prompt template for concise move suggestion
+function getPrompt(playerColor) {
+    return `You are an expert chess advisor. Your role is to:
 1. Analyze the current position thoroughly
-2. Consider:
-   - Material balance
-   - Piece development and activity
-   - King safety
-   - Control of center and key squares
-   - Pawn structure
-   - Tactical opportunities
-3. Suggest the best move with:
-   - Clear explanation of the immediate benefits
-   - Potential threats to watch out for
-Keep your response concise and focused on the most important aspects.`;
+2. Suggest ONLY the best move for the ${playerColor || 'side to move'} in standard algebraic chess notation (e.g., Nf3, ...Nf6, e4, ...e5). Do NOT provide any explanation or analysis. Just output the move only.`;
+}
 
 // Rate limiting middleware with user tracking
 const rateLimitMiddleware = async (req, res, next) => {
@@ -107,7 +99,7 @@ app.post('/suggest-move', rateLimitMiddleware, async (req, res) => {
     console.log(`[${new Date().toISOString()}] Move suggestion requested`);
     
     try {
-        const { gameState, currentMove } = req.body;
+        const { gameState, currentMove, playerColor } = req.body;
 
         if (!gameState || !currentMove) {
             return res.status(400).json({ error: 'Missing required game information' });
@@ -119,26 +111,26 @@ app.post('/suggest-move', rateLimitMiddleware, async (req, res) => {
         }
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo", // Using the more cost-effective model
+            model: "gpt-3.5-turbo",
             messages: [
                 {
                     role: "system",
-                    content: CHESS_SYSTEM_PROMPT
+                    content: getPrompt(playerColor)
                 },
                 {
                     role: "user",
-                    content: `Current position (FEN): ${gameState}\nLast move played: ${currentMove}\n\nAnalyze this position and suggest the best move.`
+                    content: `Current position (FEN): ${gameState}\nLast move played: ${currentMove}\n\nSuggest only the best move for ${playerColor || 'the side to move'} in algebraic notation. No explanation.`
                 }
             ],
-            max_tokens: 150,
-            temperature: 0.5
+            max_tokens: 20,
+            temperature: 0.2
         });
 
         const processingTime = Date.now() - startTime;
         console.log(`Request processed in ${processingTime}ms`);
 
         res.json({
-            suggestion: completion.choices[0].message.content,
+            suggestion: completion.choices[0].message.content.trim(),
             remainingRequests: await getRemainingRequests(req.ip),
             processingTime
         });
