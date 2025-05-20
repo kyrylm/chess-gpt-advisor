@@ -105,6 +105,13 @@ app.post('/suggest-move', rateLimitMiddleware, async (req, res) => {
     try {
         const { gameState, currentMove, playerColor } = req.body;
 
+        // Log incoming request details
+        console.log('--- Incoming Suggestion Request ---');
+        console.log('FEN:', gameState);
+        console.log('Last move:', currentMove);
+        console.log('Player color:', playerColor);
+        console.log('-----------------------------------');
+
         if (!gameState || !currentMove) {
             return res.status(400).json({ error: 'Missing required game information' });
         }
@@ -114,16 +121,19 @@ app.post('/suggest-move', rateLimitMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Invalid chess position format' });
         }
 
+        const prompt = getPrompt(playerColor);
+        console.log('Prompt sent to OpenAI:', prompt);
+
         const completion = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
             messages: [
                 {
                     role: "system",
-                    content: getPrompt(playerColor)
+                    content: prompt
                 },
                 {
                     role: "user",
-                    content: `Current position (FEN): ${gameState}\nLast move played: ${currentMove}\n\nSuggest only the best move for ${playerColor || 'the side to move'} in algebraic notation. No explanation.`
+                    content: `Current position (FEN): ${gameState}\nLast move played: ${currentMove}\n\nSuggest only the best move for ${playerColor || 'the side to move'} in this format. No explanation.`
                 }
             ],
             max_tokens: 20,
@@ -132,6 +142,7 @@ app.post('/suggest-move', rateLimitMiddleware, async (req, res) => {
 
         const processingTime = Date.now() - startTime;
         console.log(`Request processed in ${processingTime}ms`);
+        console.log('OpenAI response:', completion.choices[0].message.content.trim());
 
         res.json({
             suggestion: completion.choices[0].message.content.trim(),
