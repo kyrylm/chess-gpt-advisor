@@ -62,11 +62,15 @@ try {
     process.exit(1);
 }
 
-// Chess-specific prompt template for concise move suggestion
+// Chess-specific prompt template for custom move suggestion format
 function getPrompt(playerColor) {
     return `You are an expert chess advisor. Your role is to:
 1. Analyze the current position thoroughly
-2. Suggest ONLY the best move for the ${playerColor || 'side to move'} in standard algebraic chess notation (e.g., Nf3, ...Nf6, e4, ...e5). Do NOT provide any explanation or analysis. Just output the move only.`;
+2. Suggest ONLY the best move for the ${playerColor || 'side to move'} in the following format:
+   - If White: 'White [Piece] --> [destination square]'
+   - If Black: 'Black [Piece] --> [destination square]'
+   For example: 'White Knight --> f3' or 'Black Pawn --> d5'.
+   Do NOT provide any explanation or analysis. Just output the move in this format only.`;
 }
 
 // Rate limiting middleware with user tracking
